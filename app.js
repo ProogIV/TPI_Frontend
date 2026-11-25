@@ -38,6 +38,7 @@ async function cargarCatalogo() {
 
     const tabla = $("catalogo");
     const select = $("producto");
+    const seleccionado = select.value; // para no perder el producto elegido al refrescar
     tabla.innerHTML = "";
     select.innerHTML = "";
 
@@ -49,6 +50,7 @@ async function cargarCatalogo() {
       opcion.textContent = `${p.nombre} — ${pesos(p.precio)}`;
       select.appendChild(opcion);
     });
+    if (productosPorId[seleccionado]) select.value = seleccionado;
     $("catalogo-error").textContent = "";
   } catch (error) {
     $("catalogo-error").textContent = `No se pudo cargar el catálogo: ${error.message}`;
@@ -77,6 +79,7 @@ async function login() {
 }
 
 function salir() {
+  desconectarWebSocket();
   accessToken = null;
   sessionStorage.removeItem("access");
   $("app-box").classList.add("oculto");
@@ -91,6 +94,7 @@ function mostrarApp() {
   $("login-box").classList.add("oculto");
   $("app-box").classList.remove("oculto");
   cargarPedidos();
+  conectarWebSocket();
 }
 
 // --- Pedidos (requieren token) ---
@@ -134,6 +138,57 @@ async function comprar() {
 
   cargarCatalogo();
   cargarPedidos();
+}
+
+// --- Notificaciones en tiempo real por WebSocket (TP 3, Clases 9 y 10) ---
+// El navegador no deja mandar el header Authorization en un WebSocket: el token va en la URL.
+
+let ws = null;
+let cerradoAProposito = false;
+let espera = 1000; // reintento: 1 s, 2 s, 4 s... hasta 30 s (Clase 10)
+
+function conectarWebSocket() {
+  cerradoAProposito = false;
+  ws = new WebSocket(`${CONFIG.PEDIDOS_WS}?token=${encodeURIComponent(accessToken)}`);
+
+  ws.onopen = () => {
+    espera = 1000;
+    $("ws-estado").textContent = "● Tiempo real conectado";
+    $("ws-estado").className = "ok";
+    cargarPedidos(); // al (re)conectar se piden los datos frescos por REST (Clase 10)
+  };
+
+  ws.onmessage = (evento) => {
+    const datos = JSON.parse(evento.data);
+    if (datos.tipo !== "pedido_actualizado") return;
+    const p = datos.pedido;
+    const nombre = productosPorId[p.producto_id]?.nombre || p.producto_id;
+    mostrarNotificacion(`🔔 Pedido #${p.id} (${nombre}): ${p.estado} — ${pesos(p.monto_total)}`, p.estado);
+    cargarPedidos();
+    cargarCatalogo(); // el stock cambió
+  };
+
+  ws.onclose = () => {
+    $("ws-estado").textContent = "● Tiempo real desconectado";
+    $("ws-estado").className = "error";
+    if (cerradoAProposito || !accessToken) return;
+    setTimeout(conectarWebSocket, espera);
+    espera = Math.min(espera * 2, 30000);
+  };
+}
+
+function desconectarWebSocket() {
+  cerradoAProposito = true;
+  if (ws) ws.close();
+  ws = null;
+}
+
+function mostrarNotificacion(texto, estado) {
+  const aviso = document.createElement("div");
+  aviso.className = `aviso estado-${estado}`;
+  aviso.textContent = texto; // textContent: el dato viene del servidor (defensa contra XSS)
+  $("notificaciones").prepend(aviso);
+  setTimeout(() => aviso.remove(), 8000);
 }
 
 $("btn-login").addEventListener("click", login);

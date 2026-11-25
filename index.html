@@ -19,9 +19,15 @@
     .estado-FALLIDO { color: #b00020; font-weight: bold; }
     .estado-PENDIENTE { color: #a66b00; font-weight: bold; }
     .oculto { display: none; }
+    #notificaciones { position: fixed; top: 16px; right: 16px; width: 340px; z-index: 10; }
+    .aviso { background: #fff; border: 1px solid #ddd; border-left: 6px solid currentColor;
+             border-radius: 6px; padding: 10px 12px; margin-bottom: 8px;
+             box-shadow: 0 2px 8px rgba(0, 0, 0, .15); }
+    #ws-estado { font-size: 13px; margin: 0 0 8px; }
   </style>
 </head>
 <body>
+  <div id="notificaciones"></div>
   <h1>TPI E-commerce</h1>
   <p class="sub">Inventario (Express + MongoDB) · Pedidos (Django + PostgreSQL) · Pagos (FastAPI)</p>
 
@@ -44,6 +50,7 @@
 
   <section id="app-box" class="oculto">
     <h2>Comprar <small id="usuario-actual"></small></h2>
+    <p id="ws-estado"></p>
     <select id="producto"></select>
     <input id="cantidad" type="number" min="1" value="1" style="width: 80px">
     <button id="btn-comprar">Comprar</button>
