@@ -2,4 +2,6 @@
 const CONFIG = {
     INVENTARIO_API: "http://localhost:3000/api",
     PEDIDOS_API: "http://localhost:8000/api",
+    // WebSocket de notificaciones de Pedidos (spec.md, sección 8)
+    PEDIDOS_WS: "ws://localhost:8000/ws/pedidos/",
 };
