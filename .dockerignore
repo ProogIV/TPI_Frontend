@@ -1,0 +1,6 @@
+# Solo se publican los archivos del sitio
+.git/
+.github/
+Dockerfile
+.dockerignore
+README.md
